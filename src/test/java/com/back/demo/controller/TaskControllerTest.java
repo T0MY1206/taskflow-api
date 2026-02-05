@@ -1,5 +1,6 @@
 package com.back.demo.controller;
 
+import com.back.demo.dto.PagedResponse;
 import com.back.demo.dto.TaskRequest;
 import com.back.demo.dto.TaskResponse;
 import com.back.demo.exception.ResourceNotFoundException;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -46,7 +48,7 @@ class TaskControllerTest {
 
     @Test
     @WithMockUser
-    @DisplayName("GET /api/v1/tasks devuelve 200 y lista")
+    @DisplayName("GET /api/v1/tasks devuelve 200 y página (default page=0 size=20)")
     void findAll_returns200() throws Exception {
         TaskResponse resp = TaskResponse.builder()
                 .id(1L)
@@ -55,14 +57,26 @@ class TaskControllerTest {
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
-        when(taskService.findAll()).thenReturn(List.of(resp));
+        PagedResponse<TaskResponse> paged = PagedResponse.<TaskResponse>builder()
+                .content(List.of(resp))
+                .totalElements(1)
+                .totalPages(1)
+                .size(20)
+                .number(0)
+                .first(true)
+                .last(true)
+                .build();
+        when(taskService.findAll(any(Pageable.class), any())).thenReturn(paged);
 
         mockMvc.perform(get("/api/v1/tasks").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].title").value("Tarea"));
-        verify(taskService).findAll();
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].id").value(1))
+                .andExpect(jsonPath("$.content[0].title").value("Tarea"))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.number").value(0));
+        verify(taskService).findAll(any(Pageable.class), any());
     }
 
     @Test

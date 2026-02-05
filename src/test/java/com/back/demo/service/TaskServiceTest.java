@@ -1,5 +1,7 @@
 package com.back.demo.service;
 
+import com.back.demo.dto.PagedResponse;
+import com.back.demo.dto.TaskFilter;
 import com.back.demo.dto.TaskRequest;
 import com.back.demo.dto.TaskResponse;
 import com.back.demo.exception.ResourceNotFoundException;
@@ -14,6 +16,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +28,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -65,16 +73,22 @@ class TaskServiceTest {
     }
 
     @Test
-    @DisplayName("findAll devuelve lista de tareas")
-    void findAll_returnsList() {
-        when(taskRepository.findAll()).thenReturn(List.of(task));
+    @DisplayName("findAll devuelve página de tareas")
+    void findAll_returnsPagedResponse() {
+        Pageable pageable = PageRequest.of(0, 20);
+        when(taskRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(task), pageable, 1));
         when(taskMapper.toResponseList(List.of(task))).thenReturn(List.of(taskResponse));
 
-        List<TaskResponse> result = taskService.findAll();
+        PagedResponse<TaskResponse> result = taskService.findAll(pageable, null);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getTitle()).isEqualTo("Tarea de prueba");
-        verify(taskRepository).findAll();
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getTitle()).isEqualTo("Tarea de prueba");
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getTotalPages()).isEqualTo(1);
+        assertThat(result.getSize()).isEqualTo(20);
+        assertThat(result.getNumber()).isEqualTo(0);
+        verify(taskRepository).findAll(any(Specification.class), eq(pageable));
     }
 
     @Test
