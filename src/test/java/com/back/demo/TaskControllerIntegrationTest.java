@@ -54,13 +54,16 @@ class TaskControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /api/v1/tasks con token devuelve lista (vacía o con datos)")
+    @DisplayName("GET /api/v1/tasks con token devuelve página (content, totalElements, etc.)")
     void getTasks_withToken_returns200() throws Exception {
         mockMvc.perform(get("/api/v1/tasks")
                         .header("Authorization", "Bearer " + jwtToken)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.totalElements").exists())
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.number").value(0));
     }
 
     @Test

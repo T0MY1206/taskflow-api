@@ -1,12 +1,17 @@
 package com.back.demo.service;
 
+import com.back.demo.dto.PagedResponse;
+import com.back.demo.dto.TaskFilter;
 import com.back.demo.dto.TaskRequest;
 import com.back.demo.dto.TaskResponse;
 import com.back.demo.exception.ResourceNotFoundException;
 import com.back.demo.mapper.TaskMapper;
 import com.back.demo.model.Task;
 import com.back.demo.repository.TaskRepository;
+import com.back.demo.repository.TaskSpecifications;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,8 +25,18 @@ public class TaskService {
     private final TaskMapper taskMapper;
 
     @Transactional(readOnly = true)
-    public List<TaskResponse> findAll() {
-        return taskMapper.toResponseList(taskRepository.findAll());
+    public PagedResponse<TaskResponse> findAll(Pageable pageable, TaskFilter filter) {
+        Page<Task> page = taskRepository.findAll(TaskSpecifications.withFilter(filter), pageable);
+        List<TaskResponse> content = taskMapper.toResponseList(page.getContent());
+        return PagedResponse.<TaskResponse>builder()
+                .content(content)
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .size(page.getSize())
+                .number(page.getNumber())
+                .first(page.isFirst())
+                .last(page.isLast())
+                .build();
     }
 
     @Transactional(readOnly = true)
