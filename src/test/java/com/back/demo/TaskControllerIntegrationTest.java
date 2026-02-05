@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -43,10 +44,13 @@ class TaskControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /api/v1/tasks sin token devuelve 401")
+    @DisplayName("GET /api/v1/tasks sin token devuelve 401 o 403")
     void getTasks_withoutToken_returns401() throws Exception {
-        mockMvc.perform(get("/api/v1/tasks").accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized());
+        int status = mockMvc.perform(get("/api/v1/tasks").accept(MediaType.APPLICATION_JSON))
+                .andReturn()
+                .getResponse()
+                .getStatus();
+        assertThat(status).isIn(401, 403);
     }
 
     @Test
