@@ -40,6 +40,19 @@ La API queda en **http://localhost:8080**.
 - **Swagger UI:** http://localhost:8080/swagger-ui.html  
 - **OpenAPI JSON:** http://localhost:8080/v3/api-docs  
 
+### 4. Actuator (salud y métricas)
+
+- **Health (público):** http://localhost:8080/actuator/health — para load balancers y despliegues.
+- **Info:** http://localhost:8080/actuator/info  
+- **Loggers (requiere JWT):** permite cambiar el nivel de log en tiempo de ejecución (ver más abajo).
+
+### 5. Perfiles de configuración
+
+- **dev** (por defecto en desarrollo): `application-dev.yml` — SQL visible, health con detalles, más endpoints actuator.
+- **prod**: `application-prod.yml` — sin SQL en log, health sin detalles, configuración sensible por variables de entorno (`SPRING_DATASOURCE_*`, `APP_JWT_SECRET`, etc.).
+
+Para activar un perfil: `SPRING_PROFILES_ACTIVE=prod` o `--spring.profiles.active=prod`.
+
 ## API
 
 ### Autenticación

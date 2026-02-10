@@ -27,16 +27,7 @@ public class TaskService {
     @Transactional(readOnly = true)
     public PagedResponse<TaskResponse> findAll(Pageable pageable, TaskFilter filter) {
         Page<Task> page = taskRepository.findAll(TaskSpecifications.withFilter(filter), pageable);
-        List<TaskResponse> content = taskMapper.toResponseList(page.getContent());
-        return PagedResponse.<TaskResponse>builder()
-                .content(content)
-                .totalElements(page.getTotalElements())
-                .totalPages(page.getTotalPages())
-                .size(page.getSize())
-                .number(page.getNumber())
-                .first(page.isFirst())
-                .last(page.isLast())
-                .build();
+        return PagedResponse.from(page, taskMapper.toResponseList(page.getContent()));
     }
 
     @Transactional(readOnly = true)
@@ -49,13 +40,8 @@ public class TaskService {
     @Transactional
     public TaskResponse create(TaskRequest request) {
         Task task = taskMapper.toEntity(request);
-        if (request.getCompleted() != null) {
-            task.setCompleted(request.getCompleted());
-        } else {
-            task.setCompleted(false);
-        }
-        task = taskRepository.save(task);
-        return taskMapper.toResponse(task);
+        task.setCompleted(Boolean.TRUE.equals(request.getCompleted()));
+        return taskMapper.toResponse(taskRepository.save(task));
     }
 
     @Transactional
@@ -66,8 +52,7 @@ public class TaskService {
         if (request.getCompleted() != null) {
             task.setCompleted(request.getCompleted());
         }
-        task = taskRepository.save(task);
-        return taskMapper.toResponse(task);
+        return taskMapper.toResponse(taskRepository.save(task));
     }
 
     @Transactional

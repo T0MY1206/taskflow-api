@@ -17,11 +17,11 @@ public class AuthService {
     private final JwtService jwtService;
 
     public LoginResponse login(LoginRequest request) {
-        Authentication auth = authenticationManager.authenticate(
+        var auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
-        String token = jwtService.generateToken((org.springframework.security.core.userdetails.UserDetails) auth.getPrincipal());
+        var userDetails = (org.springframework.security.core.userdetails.UserDetails) auth.getPrincipal();
         return LoginResponse.builder()
-                .token(token)
+                .token(jwtService.generateToken(userDetails))
                 .type("Bearer")
                 .username(request.getUsername())
                 .build();

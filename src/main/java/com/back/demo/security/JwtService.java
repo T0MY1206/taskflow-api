@@ -1,9 +1,10 @@
 package com.back.demo.security;
 
+import com.back.demo.config.JwtProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -13,43 +14,36 @@ import java.util.Date;
 import java.util.function.Function;
 
 @Service
+@RequiredArgsConstructor
 public class JwtService {
 
-    @Value("${app.jwt.secret:my-secret-key-at-least-256-bits-for-hs256-algorithm-please-change-in-production}")
-    private String secret;
-
-    @Value("${app.jwt.expiration-ms:86400000}")
-    private long expirationMs;
+    private final JwtProperties jwtProperties;
+    private volatile SecretKey signingKey;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
+        return claimsResolver.apply(extractAllClaims(token));
     }
 
     public String generateToken(UserDetails userDetails) {
+        long now = System.currentTimeMillis();
         return Jwts.builder()
                 .subject(userDetails.getUsername())
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + expirationMs))
+                .issuedAt(new Date(now))
+                .expiration(new Date(now + jwtProperties.expirationMs()))
                 .signWith(getSigningKey())
                 .compact();
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        String username = extractUsername(token);
-        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+        return userDetails.getUsername().equals(extractUsername(token)) && !isTokenExpired(token);
     }
 
     private boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
-    }
-
-    private Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration);
+        return extractClaim(token, Claims::getExpiration).before(new Date());
     }
 
     private Claims extractAllClaims(String token) {
@@ -60,8 +54,15 @@ public class JwtService {
                 .getPayload();
     }
 
+    /** Clave en caché para no recalcular en cada petición. */
     private SecretKey getSigningKey() {
-        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
-        return Keys.hmacShaKeyFor(keyBytes);
+        if (signingKey == null) {
+            synchronized (this) {
+                if (signingKey == null) {
+                    signingKey = Keys.hmacShaKeyFor(jwtProperties.secret().getBytes(StandardCharsets.UTF_8));
+                }
+            }
+        }
+        return signingKey;
     }
 }

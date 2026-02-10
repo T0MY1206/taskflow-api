@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -35,4 +36,17 @@ public class PagedResponse<T> {
 
     @Schema(description = "Indica si es la última página")
     private boolean last;
+
+    /** Factory desde Spring Data Page. */
+    public static <T> PagedResponse<T> from(Page<?> page, List<T> content) {
+        return PagedResponse.<T>builder()
+                .content(content)
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .size(page.getSize())
+                .number(page.getNumber())
+                .first(page.isFirst())
+                .last(page.isLast())
+                .build();
+    }
 }

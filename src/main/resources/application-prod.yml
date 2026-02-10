@@ -1,0 +1,22 @@
+# Perfil: prod (uso en producción)
+# Uso: spring.profiles.active=prod
+# Configuración sensible por variables de entorno (ej. en Docker/K8s):
+#   SPRING_DATASOURCE_URL, SPRING_DATASOURCE_USERNAME, SPRING_DATASOURCE_PASSWORD
+#   APP_JWT_SECRET, APP_JWT_EXPIRATION_MS
+
+spring:
+  jpa:
+    show-sql: false
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/demo_db?options=-c%20TimeZone%3DUTC}
+    username: ${SPRING_DATASOURCE_USERNAME:demo_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:demo_pass}
+
+management:
+  endpoint:
+    health:
+      show-details: never
+  endpoints:
+    web:
+      exposure:
+        include: health,info

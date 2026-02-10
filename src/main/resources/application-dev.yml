@@ -1,0 +1,22 @@
+# Perfil: dev (por defecto en desarrollo)
+# Uso: spring.profiles.active=dev o variable SPRING_PROFILES_ACTIVE=dev
+
+spring:
+  jpa:
+    show-sql: true
+  datasource:
+    url: jdbc:postgresql://localhost:5432/demo_db?options=-c%20TimeZone%3DUTC
+    username: demo_user
+    password: demo_pass
+
+management:
+  endpoint:
+    health:
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health,info,loggers,env,configprops
+
+# JWT (sobrescribir con variables de entorno si quieres)
+# APP_JWT_SECRET, APP_JWT_EXPIRATION_MS

@@ -42,8 +42,18 @@ public class TaskController {
     private final TaskService taskService;
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Listar tareas (paginado, filtros y ordenación)")
-    @ApiResponse(responseCode = "200", description = "Página de tareas. Por defecto: page=0, size=20, sort=createdAt,desc. Size mínimo 10, máximo 100.")
+    @Operation(
+            summary = "Listar tareas",
+            description = "Devuelve una página de tareas con paginación, filtros y ordenación. Requiere JWT. " +
+                    "Filtros combinables: title (contiene en título), description (contiene), completed (true/false), " +
+                    "createdAtAfter/Before y updatedAtAfter/Before (ISO-8601). Orden: sort=campo,asc|desc."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Página de tareas (content, totalElements, totalPages, size, number, first, last)",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = PagedResponse.class))),
+            @ApiResponse(responseCode = "401", description = "No autenticado (falta o token inválido)"),
+            @ApiResponse(responseCode = "403", description = "Acceso denegado")
+    })
     public PagedResponse<TaskResponse> findAll(
             @Parameter(description = "Número de página (0-based)", schema = @Schema(defaultValue = "0")) @RequestParam(required = false, defaultValue = "0") int page,
             @Parameter(description = "Tamaño de página (mín. 10, máx. 100)", schema = @Schema(defaultValue = "20")) @RequestParam(required = false, defaultValue = "20") int size,
@@ -91,10 +101,12 @@ public class TaskController {
     }
 
     @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Obtener tarea por ID")
+    @Operation(summary = "Obtener tarea por ID", description = "Devuelve una tarea por su ID. Requiere JWT.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Tarea encontrada"),
-            @ApiResponse(responseCode = "404", description = "Tarea no encontrada", content = @Content(schema = @Schema(implementation = Void.class)))
+            @ApiResponse(responseCode = "200", description = "Tarea encontrada", content = @Content(schema = @Schema(implementation = TaskResponse.class))),
+            @ApiResponse(responseCode = "401", description = "No autenticado"),
+            @ApiResponse(responseCode = "403", description = "Acceso denegado"),
+            @ApiResponse(responseCode = "404", description = "Tarea no encontrada")
     })
     public TaskResponse findById(
             @Parameter(description = "ID de la tarea") @PathVariable Long id) {
@@ -103,17 +115,31 @@ public class TaskController {
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Crear nueva tarea")
-    @ApiResponse(responseCode = "201", description = "Tarea creada")
+    @Operation(
+            summary = "Crear tarea",
+            description = "Crea una nueva tarea. Body: title (obligatorio), description (opcional), completed (opcional, default false). Requiere JWT."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Tarea creada", content = @Content(schema = @Schema(implementation = TaskResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Validación fallida (ej. título vacío)"),
+            @ApiResponse(responseCode = "401", description = "No autenticado"),
+            @ApiResponse(responseCode = "403", description = "Acceso denegado")
+    })
     public TaskResponse create(@Valid @RequestBody TaskRequest request) {
         return taskService.create(request);
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Actualizar tarea")
+    @Operation(
+            summary = "Actualizar tarea",
+            description = "Reemplaza la tarea con el ID dado. Body completo: title, description, completed. Requiere JWT."
+    )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Tarea actualizada"),
-            @ApiResponse(responseCode = "404", description = "Tarea no encontrada", content = @Content(schema = @Schema(implementation = Void.class)))
+            @ApiResponse(responseCode = "200", description = "Tarea actualizada", content = @Content(schema = @Schema(implementation = TaskResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Validación fallida"),
+            @ApiResponse(responseCode = "401", description = "No autenticado"),
+            @ApiResponse(responseCode = "403", description = "Acceso denegado"),
+            @ApiResponse(responseCode = "404", description = "Tarea no encontrada")
     })
     public TaskResponse update(
             @Parameter(description = "ID de la tarea") @PathVariable Long id,
@@ -123,10 +149,12 @@ public class TaskController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Borrar tarea")
+    @Operation(summary = "Borrar tarea", description = "Elimina la tarea con el ID dado. No devuelve cuerpo. Requiere JWT.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Tarea eliminada"),
-            @ApiResponse(responseCode = "404", description = "Tarea no encontrada", content = @Content(schema = @Schema(implementation = Void.class)))
+            @ApiResponse(responseCode = "401", description = "No autenticado"),
+            @ApiResponse(responseCode = "403", description = "Acceso denegado"),
+            @ApiResponse(responseCode = "404", description = "Tarea no encontrada")
     })
     public void delete(
             @Parameter(description = "ID de la tarea") @PathVariable Long id) {

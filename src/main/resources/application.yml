@@ -1,6 +1,13 @@
 spring:
   application:
     name: demo
+  # Perfil por defecto si no se define SPRING_PROFILES_ACTIVE ni --spring.profiles.active
+  profiles:
+    active: dev
+  # Virtual threads (Java 21+) para mayor concurrencia sin aumentar hilos de plataforma
+  threads:
+    virtual:
+      enabled: true
   datasource:
     url: jdbc:postgresql://localhost:5432/demo_db?options=-c%20TimeZone%3DUTC
     username: demo_user
@@ -36,3 +43,19 @@ springdoc:
     path: /swagger-ui.html
     operationsSorter: method
     tagsSorter: alpha
+
+# Actuator: health e info públicos (load balancers); el resto requiere JWT
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,loggers
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized  # detalles solo si hay auth; sin auth solo status
+    info:
+      enabled: true
+  info:
+    env:
+      enabled: true
